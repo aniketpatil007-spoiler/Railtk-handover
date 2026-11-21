@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Check PNR status · Rail Handover</title><link rel="stylesheet" href="/style.css"></head><body>
+<header><div class="bar"><strong><span class="logo" aria-hidden="true">⇄</span> Rail Handover</strong><a href="/">My journeys</a></div></header>
+<main><div class="intro"><h1>Check PNR status</h1><p>See the current reservation status of each passenger on your ticket.</p></div>
+<div class="layout"><section class="card"><form id="lookup"><label>10-digit PNR<input id="number" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" autocomplete="off" placeholder="Enter your PNR"></label><p>Checking sends this PNR to API Mitra and saves the enquiry in your account.</p><button>Check and list ticket</button></form><p role="status" id="feedback"></p></section>
+<aside class="ticket"><h2>Official PNR enquiry</h2><p>For a railway-issued status, enter your PNR on the Indian Railways enquiry page.</p><a target="_blank" rel="noopener noreferrer" href="https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html">Open Indian Railways enquiry</a></aside></div>
+<section class="card lower"><h2>My PNR checks</h2><div id="records" aria-live="polite">Loading tickets…</div></section></main><script src="/pnr.js"></script></body></html>
