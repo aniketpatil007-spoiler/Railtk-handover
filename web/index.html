@@ -1,9 +1,423 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Rail Handover · Journey requests and family transfers</title><link rel="stylesheet" href="style.css"></head><body>
-<header><div class="bar"><strong><span class="logo" aria-hidden="true">⇄</span> Rail Handover</strong><nav aria-label="Ticket tools"><a href="/pnr">PNR status</a> · <a href="#handover">Name change</a></nav></div></header>
-<main><div class="intro"><small>RAIL HANDOVER</small><h1>Plan your rail journey</h1><p>Save a route to book on IRCTC, or manage a ticket you already hold.</p></div>
-<section class="card planner"><h2>My journeys</h2><form id="journey"><label>I want to<select id="kind"><option value="wanted">Find a ticket</option><option value="held">List a ticket I hold privately</option></select></label><div class="grid"><label>From station<input id="origin" required maxlength="80" placeholder="e.g. Bengaluru (SBC)"></label><label>To station<input id="destination" required maxlength="80" placeholder="e.g. Mysuru (MYS)"></label></div><label>Journey date <span>Indian Standard Time</span><input type="date" id="travelDate" required></label><button id="saveJourney">Save journey request</button></form><p id="journeyMessage" role="status"></p><h3>Saved in your account</h3><div id="journeys"></div></section>
-<section class="card account"><a style="float:right" href="/profile">Contact details</a><h2>Request alerts</h2><p>Get a browser notification when your letter is ready to print.</p><button id="alerts">Enable notifications</button> <span role="status" id="alertState"></span></section><div class="layout"><section id="handover" class="card"><h2>Family name-change assistant</h2><p>Check eligibility, prepare a written request, and take it to the nearest Railway Reservation Office.</p><p id="handoverTicket" role="status" hidden></p><form id="check"><label>Ticket status<select id="status" required><option value="">Select ticket status</option><option>Confirmed</option><option>RAC</option><option>Waitlisted</option></select></label><label>Scheduled departure <span>Indian Standard Time</span><input type="datetime-local" id="dep" required></label><label>Booking circumstances<select id="ordinary" required><option value="">Select booking circumstances</option><option value="yes">Regular full-fare booking, first name-change request</option><option value="no">Special quota, concession, current booking or previous change</option></select></label><label>Who will travel instead?<select id="relation" required><option value="">Select relationship</option></select></label><button>Check eligibility</button></form><div id="result" role="status"></div><button hidden id="create">Create request letter</button></section>
-<aside><div class="ticket"><div class="cap">FAMILY TRANSFER GUIDE</div><h2>Before you apply</h2><div class="row"><b>Confirmed ticket</b><p>The reservation must be confirmed.</p></div><div class="row"><b>Eligible family member</b><p>A parent, sibling, child or spouse can be named in the request.</p></div><div class="row"><b>24 hours before departure</b><p>Submit your written request at the Railway Reservation Office by this deadline.</p></div><div class="row"><b>Railway approval</b><p>A name change can be granted once. Private resale is prohibited. If you cannot use your reservation, check your cancellation options on IRCTC.</p><a href="https://er.indianrailways.gov.in/offerings/schemes-and-services/preview/373">Railway name-change rules</a> · <a href="https://contents.irctc.co.in/en/Eticket_new_cancel.html">Cancellation guide</a></div><div class="stub">Rail Handover <i aria-hidden="true"></i></div></div></aside></div>
-<section id="details" hidden class="card lower"><h2>Journey and passenger details</h2><form id="booking" autocomplete="off"><div class="grid" id="fields"></div><button>Preview request letter</button></form></section>
-<section id="preview" hidden class="card lower"><h2>Your request letter</h2><label>Edit your letter<textarea id="letter" rows="15"></textarea></label><h3>Bring to the reservation office</h3><ul><li>Signed request letter</li><li>Electronic reservation slip printout for an e-ticket</li><li>Original photo ID for a passenger on the booking</li><li>Proof of the family relationship</li></ul><p id="submissionDeadline"></p><p>Submit your signed request and documents at the nearest Railway Reservation Office. Railway staff decide whether to approve it. Use your device’s print menu to save a PDF.</p><button id="download">Print or save request letter</button></section>
-<footer><span>Passenger details stay in this browser tab.</span><button id="clear">Clear my details</button></footer></main><article id="paper"></article><script src="rules.js"></script><script src="app.js"></script><script src="alerts.js"></script><script src="/journeys.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rail Handover · Indian Railways Journey & Family Transfer Hub</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">⇄</span>
+      <div class="brand-text">
+        <strong>Rail Handover</strong>
+        <span class="tagline">Indian Railways Journey & Family Transfer Hub</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="https://contents.irctc.co.in/en/Eticket_new_cancel.html" target="_blank" rel="noopener noreferrer" class="nav-link">IRCTC Rules ↗</a>
+      <a href="/profile" class="nav-link">Contact details</a>
+    </div>
+  </div>
+  <nav class="main-tabs" aria-label="Main sections">
+    <button type="button" class="tab-btn active" data-tab="trains">
+      <span>🔍</span> Find Trains
+    </button>
+    <button type="button" class="tab-btn" data-tab="pnr">
+      <span>🎫</span> PNR Status
+    </button>
+    <button type="button" class="tab-btn" data-tab="trips">
+      <span>🚆</span> My Trips <span id="tripsBadge" class="badge">0</span>
+    </button>
+    <button type="button" class="tab-btn" data-tab="handover">
+      <span>📄</span> Family Handover
+    </button>
+  </nav>
+</header>
+
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <button type="button" class="mobile-tab-btn active" data-tab="trains">
+    <span class="m-icon">🔍</span>
+    <span class="m-label">Trains</span>
+  </button>
+  <button type="button" class="mobile-tab-btn" data-tab="pnr">
+    <span class="m-icon">🎫</span>
+    <span class="m-label">PNR</span>
+  </button>
+  <button type="button" class="mobile-tab-btn" data-tab="trips">
+    <span class="m-icon">🚆</span>
+    <span class="m-label">My Trips</span>
+  </button>
+  <button type="button" class="mobile-tab-btn" data-tab="handover">
+    <span class="m-icon">📄</span>
+    <span class="m-label">Handover</span>
+  </button>
+</nav>
+
+<main>
+  <!-- SECTION 1: FIND TRAINS -->
+  <section id="section-trains" class="tab-content">
+    <div class="intro">
+      <small>FIND TRAINS & TRIP PLANNER</small>
+      <h1>Search Indian Railways journeys</h1>
+      <p>Plan routes, check availability on IRCTC, and save your journeys or private tickets.</p>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <h2>Plan or save a journey</h2>
+        <form id="trainsForm" autocomplete="off">
+          <div class="station-row">
+            <label>From station
+              <input id="searchOrigin" required maxlength="80" placeholder="e.g. Bengaluru (SBC)" value="Bengaluru (SBC)">
+            </label>
+            <button type="button" id="swapStationsBtn" class="swap-btn" title="Swap stations" aria-label="Swap stations">⇄</button>
+            <label>To station
+              <input id="searchDestination" required maxlength="80" placeholder="e.g. Mysuru (MYS)" value="Mysuru (MYS)">
+            </label>
+          </div>
+
+          <label>Journey date <span>Indian Standard Time</span>
+            <input type="date" id="searchDate" required>
+            <div class="date-helpers">
+              <span class="date-chip" id="chipToday">Today</span>
+              <span class="date-chip" id="chipTomorrow">Tomorrow</span>
+              <span class="date-chip" id="chipPlus7">+7 Days</span>
+            </div>
+          </label>
+
+          <label>Save as
+            <select id="searchKind">
+              <option value="wanted">Journey Request (Planning to book)</option>
+              <option value="held">Ticket I hold privately</option>
+            </select>
+          </label>
+
+          <div id="heldPnrGroup" hidden>
+            <label>10-digit PNR (Optional)
+              <input id="searchPnr" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="Enter 10-digit PNR if booked">
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px;">
+            <button type="submit" id="saveTripBtn">Save to My Trips</button>
+            <a id="irctcDirectBtn" class="btn secondary" href="https://www.irctc.co.in/nget/train-search" target="_blank" rel="noopener noreferrer">
+              Check live seats on IRCTC ↗
+            </a>
+          </div>
+        </form>
+        <p id="trainsMessage" role="status" style="margin-top: 14px; font-weight: 600;"></p>
+      </div>
+
+      <aside class="card" style="background: #eef6f2;">
+        <h2>IRCTC Booking Guide</h2>
+        <div style="font-size: 14px;">
+          <p><strong>Advance Reservation Period:</strong> Regular booking opens up to 120 days in advance (excluding the date of journey).</p>
+          <p><strong>Tatkal Booking Windows:</strong></p>
+          <ul style="padding-left: 20px; margin: 6px 0;">
+            <li><strong>AC Classes:</strong> 10:00 AM IST daily</li>
+            <li><strong>Non-AC Classes:</strong> 11:00 AM IST daily</li>
+          </ul>
+          <p><strong>Direct IRCTC Link:</strong> Live seats, quotas (General, Tatkal, Ladies, Senior Citizen), and online ticketing are processed through IRCTC.</p>
+        </div>
+        <div style="margin-top: 16px;">
+          <a class="btn outline" href="https://www.irctc.co.in/nget/train-search" target="_blank" rel="noopener noreferrer" style="width: 100%; text-align: center;">Open IRCTC Train Search ↗</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- SECTION 2: PNR STATUS AGENT -->
+  <section id="section-pnr" class="tab-content" hidden>
+    <div class="intro">
+      <small>PNR STATUS AGENT</small>
+      <h1>Check live PNR status</h1>
+      <p>Real-time passenger reservation enquiry powered by API Mitra with official Indian Railways fallbacks.</p>
+    </div>
+
+    <div class="layout">
+      <div>
+        <div class="card">
+          <h2>Check 10-digit PNR</h2>
+          <form id="pnrForm">
+            <label>Enter 10-digit PNR number
+              <input id="pnrInput" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="e.g. 1234567890" autocomplete="off">
+            </label>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button type="submit" id="pnrSubmitBtn">Check Status</button>
+              <span id="pnrFeedback" role="status" style="font-size: 14px; font-weight: 500;"></span>
+            </div>
+          </form>
+
+          <!-- Error / Preservation Warning Box -->
+          <div id="pnrAlertBox" class="warning-box" hidden>
+            <div id="pnrAlertMessage"></div>
+          </div>
+
+          <!-- Dynamic PNR Result Display -->
+          <div id="pnrResultCard" class="pnr-card" hidden>
+            <div class="pnr-header">
+              <div>
+                <span id="resPnrNumber" class="pnr-number"></span>
+                <div id="resTrainTitle" class="train-title"></div>
+                <div id="resRoute" style="font-size: 13px; color: var(--text-muted); margin-top: 2px;"></div>
+              </div>
+              <div style="text-align: right;">
+                <span id="resChartStatus" class="status-pill cnf"></span>
+              </div>
+            </div>
+
+            <div id="resStatusBanner" class="status-banner"></div>
+
+            <table class="passenger-table">
+              <thead>
+                <tr>
+                  <th>Passenger</th>
+                  <th>Current Status</th>
+                  <th>Coach & Berth</th>
+                  <th>Booking Status</th>
+                </tr>
+              </thead>
+              <tbody id="resPassengerRows"></tbody>
+            </table>
+
+            <div id="resAgentExplanation" class="notice-box"></div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border-light); padding-top: 12px; margin-top: 14px;">
+              <span id="resMetadata"></span>
+              <button type="button" id="resToHandoverBtn" class="btn secondary" style="font-size: 13px; padding: 6px 14px;">
+                Prepare Family Name-Change Request ➔
+              </button>
+            </div>
+          </div>
+
+          <!-- Manual Reporting Details -->
+          <details id="manualDetails" style="margin-top: 20px; border-top: 1px solid var(--border-light); padding-top: 14px;">
+            <summary style="cursor: pointer; color: var(--primary); font-weight: 600; font-size: 14px;">
+              Save result manually from Indian Railways
+            </summary>
+            <div style="margin-top: 12px;">
+              <p style="font-size: 13px; color: var(--text-muted);">
+                If automatic lookup is unavailable, enter the current status of each passenger from Indian Railways enquiry below (one per line).
+              </p>
+              <label>Passenger statuses (one per line)
+                <textarea id="manualStatuses" rows="3" placeholder="CNF B4 23&#10;RAC 2&#10;WL 15"></textarea>
+              </label>
+              <button type="button" id="saveManualBtn" class="btn secondary">Save Reported Status</button>
+            </div>
+          </details>
+        </div>
+
+        <div class="card">
+          <h2>Recent PNR Checks in Account</h2>
+          <div id="savedPnrChecksList" aria-live="polite">Loading checks…</div>
+        </div>
+      </div>
+
+      <aside class="card" style="background: #eef6f2;">
+        <h2>Official PNR Enquiry Fallback</h2>
+        <p style="font-size: 14px;">
+          For the definitive status directly from Centre for Railway Information Systems (CRIS), verify on the official Indian Railways portal:
+        </p>
+        <div style="margin: 16px 0;">
+          <a class="btn" href="https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html" target="_blank" rel="noopener noreferrer" style="width: 100%; text-align: center;">
+            Open Official PNR Enquiry ↗
+          </a>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted);">
+          Results entered manually from official enquiry will be marked as <em>Reported status · Entered by you</em> in your account.
+        </p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- SECTION 3: MY TRIPS -->
+  <section id="section-trips" class="tab-content" hidden>
+    <div class="intro">
+      <small>SAVED TICKETS & TRIPS</small>
+      <h1>My Trips</h1>
+      <p>Manage your saved journeys, linked PNRs, live statuses, and family transfer requests.</p>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="margin: 0;">Saved Journeys & Tickets</h2>
+        <button type="button" class="btn outline" id="refreshTripsBtn" style="padding: 6px 12px; font-size: 13px;">Refresh All</button>
+      </div>
+      <div id="journeysList">Loading saved journeys…</div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: FAMILY HANDOVER ASSISTANT -->
+  <section id="section-handover" class="tab-content" hidden>
+    <div class="intro">
+      <small>FAMILY NAME-CHANGE ASSISTANT</small>
+      <h1>Family Name-Change Assistant</h1>
+      <p>Check eligibility, prepare a formal letter to the Chief Reservation Supervisor, and view required documents.</p>
+    </div>
+
+    <div id="handoverPrefillBanner" class="notice-box" hidden></div>
+
+    <div class="layout">
+      <div>
+        <div class="card">
+          <h2>1. Eligibility Check</h2>
+          <form id="eligibilityForm">
+            <div class="grid">
+              <label>10-digit PNR Number
+                <input id="hoPnr" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10-digit PNR">
+              </label>
+              <label>Train Number (5 digits)
+                <input id="hoTrain" required inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="e.g. 12658">
+              </label>
+            </div>
+
+            <div class="grid">
+              <label>From station
+                <input id="hoFrom" required maxlength="80" placeholder="Boarding station">
+              </label>
+              <label>To station
+                <input id="hoTo" required maxlength="80" placeholder="Destination station">
+              </label>
+            </div>
+
+            <label>Scheduled departure <span>Indian Standard Time</span>
+              <input type="datetime-local" id="hoDep" required>
+            </label>
+
+            <div id="hoPassengerGroup" hidden>
+              <label>Select passenger whose name should change
+                <select id="hoPassengerSelect"></select>
+              </label>
+            </div>
+
+            <label>Current reservation status of this passenger
+              <select id="hoStatus" required>
+                <option value="">Select ticket status</option>
+                <option value="Confirmed">Confirmed (CNF)</option>
+                <option value="RAC">RAC (Reservation Against Cancellation)</option>
+                <option value="Waitlisted">Waitlisted (WL)</option>
+              </select>
+            </label>
+
+            <label>Who will travel instead? (Proposed family relationship)
+              <select id="hoRelation" required>
+                <option value="">Select relationship</option>
+              </select>
+            </label>
+
+            <label>Has this ticket already had a name change?
+              <select id="hoPriorChange" required>
+                <option value="no">No (First name-change request)</option>
+                <option value="yes">Yes (Previously changed)</option>
+              </select>
+            </label>
+
+            <label>Booking circumstances
+              <select id="hoCircumstances" required>
+                <option value="regular">Regular full-fare ticket</option>
+                <option value="special">Special quota, concession, or group booking</option>
+              </select>
+            </label>
+
+            <button type="submit" id="checkEligibilityBtn">Check Eligibility</button>
+          </form>
+
+          <div id="hoEligibilityResult" role="status" style="margin-top: 16px;"></div>
+
+          <div id="hoCreateAction" hidden style="margin-top: 16px;">
+            <button type="button" id="startLetterBtn" class="btn">Proceed to Request Letter ➔</button>
+          </div>
+        </div>
+
+        <!-- Passenger Details for Letter -->
+        <div id="hoLetterDetailsCard" class="card" hidden>
+          <h2>2. Passenger Details for Letter</h2>
+          <form id="letterDetailsForm">
+            <div class="grid">
+              <label>Original booked passenger name
+                <input id="hoOriginalName" required maxlength="80" placeholder="Name as printed on ticket">
+              </label>
+              <label>Proposed traveling family member name
+                <input id="hoProposedName" required maxlength="80" placeholder="Full name of family member">
+              </label>
+            </div>
+            <div class="grid">
+              <label>Document proving relationship
+                <select id="hoProofDoc">
+                  <option value="Aadhaar Card">Aadhaar Card</option>
+                  <option value="Ration Card">Ration Card</option>
+                  <option value="Passport">Passport</option>
+                  <option value="Birth Certificate">Birth Certificate</option>
+                  <option value="Marriage Certificate">Marriage Certificate</option>
+                </select>
+              </label>
+              <label>Original passenger mobile number
+                <input id="hoPhone" type="tel" maxlength="15" placeholder="+91 98765 43210">
+              </label>
+            </div>
+            <button type="submit">Generate Printable Letter</button>
+          </form>
+        </div>
+
+        <!-- Generated Letter Card -->
+        <div id="hoLetterCard" class="card" hidden>
+          <h2>3. Chief Reservation Supervisor Request Letter</h2>
+          <p style="font-size: 14px; color: var(--text-muted);">
+            You can edit the letter text directly if needed. Submit this signed letter along with your documents at the reservation office.
+          </p>
+          <label>Letter content
+            <textarea id="letterText" rows="18" style="font-family: monospace; font-size: 13px;"></textarea>
+          </label>
+          <p id="hoDeadlineNotice" style="font-weight: 600; color: var(--primary);"></p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px;">
+            <button type="button" id="printLetterBtn">Print or Save as PDF</button>
+            <button type="button" id="alertsBtn" class="btn secondary">Enable Browser Alert</button>
+            <span id="alertState" style="font-size: 13px; align-self: center;"></span>
+          </div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="card" style="background: #eef6f2;">
+          <h2>Reservation Office Checklist</h2>
+          <p style="font-size: 14px;">
+            Carry these physical documents to the Chief Reservation Supervisor at the nearest Railway Reservation Office (PRS counter):
+          </p>
+          <ul class="checklist">
+            <li><strong>Signed Request Letter</strong> (printed using this assistant).</li>
+            <li><strong>Electronic Reservation Slip (ERS)</strong> printout of the confirmed e-ticket.</li>
+            <li><strong>Original Photo ID</strong> of the booked passenger (Aadhaar, Passport, Voter ID).</li>
+            <li><strong>Original Photo ID</strong> of the family member traveling instead.</li>
+            <li><strong>Proof of Family Relationship</strong> (Ration Card, Passport, Birth/Marriage Certificate).</li>
+          </ul>
+          <div class="notice-box" style="font-size: 13px;">
+            <strong>Railway Office Approval:</strong> Railway staff evaluate and decide whether to approve the transfer. Resale or transfer outside eligible family is prohibited under the Indian Railways Act.
+          </div>
+          <div style="margin-top: 14px;">
+            <a class="nav-link" href="https://er.indianrailways.gov.in/offerings/schemes-and-services/preview/373" target="_blank" rel="noopener noreferrer">
+              Official Indian Railways Rule 229 ↗
+            </a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>Passenger details stay in your browser and your private account.</span>
+  <button type="button" id="clearDataBtn">Clear Form Details</button>
+</footer>
+
+<article id="paper"></article>
+
+<script src="/rules.js"></script>
+<script src="/alerts.js"></script>
+<script src="/pnr.js"></script>
+<script src="/journeys.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
